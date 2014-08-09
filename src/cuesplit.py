@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# $Id$
+# $Id: cuesplit.py 1692 2014-07-16 21:47:34Z Stefan $
 
 import os, sys, re
 import time
@@ -12,7 +12,7 @@ import multiprocessing
 
 def ogg_enc(queue, trackfilename, track, quality=5):
 	"""Ogg Vorbis encoder."""
-	subprocess.call(['oggenc',
+	subprocess.call(['oggenc2',
 		'-q', str(quality),
 		'-a', track.performer,
 		'-N', track.index,
@@ -24,6 +24,27 @@ def ogg_enc(queue, trackfilename, track, quality=5):
 	] )
 	# remove a token
 	queue.get()
+
+def opus_enc(queue, trackfilename, track, quality=112.0):
+	"""Opus encoder."""
+	param = ['opusenc',
+		'--vbr',
+		'--bitrate', str(quality),
+		#'--comp', 10, #default
+		#'--framesize', '60', # default 20
+		'--artist', track.performer,
+		'--comment', 'tracknumber={}'.format(track.index),
+		'--title', track.title,
+		'--date', track.cd_date,
+		'--genre', track.cd_genre,
+		'--album', track.cd_title,
+		trackfilename,
+		'{}.opus'.format( os.path.splitext(trackfilename)[0] ),
+	]
+	subprocess.call(param)
+	# remove a token
+	queue.get()
+
 
 def mp3_enc(queue, trackfilename, track, quality=5):
 	"""MPEG2-Layer3 encoder."""
@@ -313,7 +334,7 @@ class CueSheet:
 
 if __name__ == "__main__":
 	### modify me
-	use_codecs = (mp3_enc, ogg_enc, mpc_enc, tta_enc )
+	use_codecs = (mp3_enc, opus_enc, ogg_enc, mpc_enc, tta_enc )
 	###
 
 	cue_files = []
